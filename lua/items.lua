@@ -51,6 +51,7 @@ local addresses = {
   magic_usage = 0x7ef37b,
   swap1 = 0x7ef38c,
   swap2 = 0x7ef38e,
+  timer = 0x7ef43e,
 }
 
 local bottle_addresses = {
@@ -59,6 +60,12 @@ local bottle_addresses = {
   addresses.bottle3,
   addresses.bottle4,
 }
+
+local timed_effects = {}
+
+local function get_timer()
+  return memory.read_u32_le(addresses.timer)
+end
 
 local function set_health(value)
   return memory.writebyte(addresses.health_cur, value)
@@ -669,6 +676,113 @@ local function set_bottles(value)
   end
 end
 
+local function start_effect(name, duration, on_frame, on_end, data)
+  if timed_effects[name] then
+    return
+  end
+  local end_time = get_timer() + duration
+  timed_effects[name] = {
+    name = name,
+    end_time = end_time,
+    on_frame = on_frame,
+    on_end = on_end,
+    data = data,
+  }
+end
+
+local function swordless_frame(data)
+  local sword = get_sword()
+  if sword > 0 then
+    local new_sword = data.cur_sword + sword
+    if new_sword > 4 then
+      new_sword = 4
+    end
+    data.cur_sword = new_sword
+    set_sword(0)
+  end
+end
+
+local function swordless_end(data)
+  set_sword(data.cur_sword)
+end
+
+local function swordless_cancel()
+  if not timed_effects.swordless then
+    return
+  end
+  swordless_end(timed_effects.swordless.data)
+  timed_effects.swordless = nil
+end
+
+local function swordless_start(duration)
+  local cur_sword = get_sword()
+  set_sword(0)
+  local data = {cur_sword = cur_sword}
+  start_effect("swordless", duration, swordless_frame, swordless_end, data)
+end
+
+local function armorless_frame(data)
+  local armor = get_armor()
+  if armor > 0 then
+    local new_armor = data.cur_armor + armor
+    if new_armor > 2 then
+      new_armor = 2
+    end
+    data.cur_armor = new_armor
+    set_armor(0)
+  end
+end
+
+local function armorless_end(data)
+  set_armor(data.cur_armor)
+end
+
+local function armorless_cancel()
+  if not timed_effects.armorless then
+    return
+  end
+  armorless_end(timed_effects.armorless.data)
+  timed_effects.armorless = nil
+end
+
+local function armorless_start(duration)
+  local cur_armor = get_armor()
+  set_armor(0)
+  local data = {cur_armor = cur_armor}
+  start_effect("armorless", duration, armorless_frame, armorless_end, data)
+end
+
+local function shieldfree_frame(data)
+  local shield = get_shield()
+  if shield > 0 then
+    local new_shield = data.cur_shield + shield
+    if new_shield > 3 then
+      new_shield = 3
+    end
+    data.cur_shield = new_shield
+    set_shield(0)
+  end
+end
+
+local function shieldfree_end(data)
+  set_shield(data.cur_shield)
+end
+
+local function shieldfree_cancel()
+  if not timed_effects.shieldfree then
+    return
+  end
+  shieldfree_end(timed_effects.shieldfree.data)
+  timed_effects.shieldfree = nil
+end
+
+local function shieldfree_start(duration)
+  local cur_shield = get_shield()
+  set_shield(0)
+  local data = {cur_shield = cur_shield}
+  start_effect("shieldfree", duration, shieldfree_frame, shieldfree_end, data)
+end
+
 items.item_data = {
   bow = {name = "Bow", get = get_bow, set = set_bow, values = {"none", "regular", "silver"}},
   boomerang = {name = "Boomerang", get = get_boomerang, set = set_boomerang, values = {"none", "blue", "red", "both"}},
@@ -713,8 +827,44 @@ items.action_data = {
   fill_health = {name = "Fill Health", action = fill_health},
 }
 
+items.effects_data = {
+  swordless = {
+    name = "Swordless (5 min)",
+    cancel_name = "Cancel Swordless",
+    is_active = function() return not not timed_effects.swordless end,
+    start = function() swordless_start(5 * 60 * 60) end,
+    cancel = swordless_cancel,
+  },
+  armorless = {
+    name = "Armorless (5 min)",
+    cancel_name = "Cancel Armorless",
+    is_active = function() return not not timed_effects.armorless end,
+    start = function() armorless_start(5 * 60 * 60) end,
+    cancel = armorless_cancel,
+  },
+  shieldfree = {
+    name = "Shieldfree (5 min)",
+    cancel_name = "Cancel Shieldfree",
+    is_active = function() return not not timed_effects.shieldfree end,
+    start = function() shieldfree_start(5 * 60 * 60) end,
+    cancel = shieldfree_cancel,
+  },
+}
+
 items.addresses = addresses
 
 items.get_bottles = get_bottles
+
+function items.frame_check()
+  local timer = get_timer()
+  for k, v in pairs(timed_effects) do
+    if timer > v.end_time then
+      v.on_end(v.data)
+      timed_effects[k] = nil
+    else
+      v.on_frame(v.data)
+    end
+  end
+end
 
 return items;

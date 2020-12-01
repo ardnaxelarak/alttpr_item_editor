@@ -66,6 +66,9 @@ local page5 = {
   {action = "fill_bombs"},
   {action = "fill_magic"},
   {action = "fill_health"},
+  {effect = "swordless"},
+  {effect = "armorless"},
+  {effect = "shieldfree"},
 }
 
 local pages = {
@@ -118,6 +121,8 @@ local function get_repeat(framenum)
 end
 
 function menu_drawer.frame()
+  items.frame_check()
+
   local btns = controller.get_buttons()
   if check_menu(btns) then
     if menu then
@@ -159,10 +164,19 @@ function menu_drawer.frame()
     else
       local entry = pages[pagenum][menuindex]
       if btns["P1 A"] == 1 then
-        if entry.item then
-          menuselected = true
-        elseif entry.action then
-          items.action_data[entry.action].action()
+        if not entry.condition or entry.condition() then
+          if entry.item then
+            menuselected = true
+          elseif entry.action then
+            items.action_data[entry.action].action()
+          elseif entry.effect then
+            local effect = items.effects_data[entry.effect]
+            if effect.is_active() then
+              effect.cancel()
+            else
+              effect.start()
+            end
+          end
         end
       elseif btns["P1 R"] == 1 then
         pagenum = pagenum + 1
@@ -190,32 +204,44 @@ function menu_drawer.frame()
     end
 
     gui.drawRectangle(10, 10, 236, 204, nil, 0x80000000)
-    gui.drawPolygon(leftarrow, 26, 25)
+    gui.drawPolygon(leftarrow, 26, 25, "white", "white")
     gui.drawText(28, 18, "L", nil, nil, 11)
     gui.drawText(110, 18, pagenum .. "/" .. #pages, nil, nil, 11)
     gui.drawText(217, 18, "R", nil, nil, 11)
-    gui.drawPolygon(rightarrow, 229, 25)
+    gui.drawPolygon(rightarrow, 229, 25, "white", "white")
     local y = 45
     for i, v in ipairs(pages[pagenum]) do
       local skip = v.condition and not v.condition()
-      if not skip then
-        if i == menuindex then
-          gui.drawPolygon(rightarrow, 15, y + 7, "white", "white")
-          if menuselected then
-            gui.drawPolygon(leftarrow, 147, y + 7, "white", "white")
-            gui.drawPolygon(rightarrow, 230, y + 7, "white", "white")
-          end
-        end
-        if v.item then
-          local item = items.item_data[v.item]
-          gui.drawText(20, y, item.name, nil, nil, 12)
-          gui.drawText(150, y, tostring(item.values[item.get() + 1]), nil, nil, 12)
-        elseif v.action then
-          local action = items.action_data[v.action]
-          gui.drawText(20, y, action.name, nil, nil, 12)
-        end
-        y = y + 12
+      local color = "white"
+      if skip then
+        color = 0xff999999
       end
+      if i == menuindex then
+        gui.drawPolygon(rightarrow, 15, y + 7, color, color)
+        if menuselected then
+          gui.drawPolygon(leftarrow, 147, y + 7, color, color)
+          gui.drawPolygon(rightarrow, 230, y + 7, color, color)
+        end
+      end
+      if v.item then
+        local item = items.item_data[v.item]
+        gui.drawText(20, y, item.name, color, nil, 12)
+        if not skip then
+          gui.drawText(150, y, tostring(item.values[item.get() + 1]), color, nil, 12)
+        end
+      elseif v.action then
+        local action = items.action_data[v.action]
+        gui.drawText(20, y, action.name, color, nil, 12)
+      elseif v.effect then
+        local effect = items.effects_data[v.effect]
+        local active = effect.is_active()
+        if active then
+          gui.drawText(20, y, effect.cancel_name, color, nil, 12)
+        else
+          gui.drawText(20, y, effect.name, color, nil, 12)
+        end
+      end
+      y = y + 12
     end
   end
 
