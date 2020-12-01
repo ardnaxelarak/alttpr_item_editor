@@ -60,12 +60,20 @@ local page4 = {
   {item = "bottle3", condition = function() return items.get_bottles() >= 3 end},
   {item = "bottle4", condition = function() return items.get_bottles() >= 4 end},
 }
+local page5 = {
+  {action = "fill_rupees"},
+  {action = "fill_arrows"},
+  {action = "fill_bombs"},
+  {action = "fill_magic"},
+  {action = "fill_health"},
+}
 
 local pages = {
   page1,
   page2,
   page3,
   page4,
+  page5,
 }
 
 local rightarrow = {{0, -3}, {3, 0}, {0, 3}}
@@ -149,8 +157,13 @@ function menu_drawer.frame()
         end
       end
     else
+      local entry = pages[pagenum][menuindex]
       if btns["P1 A"] == 1 then
-        menuselected = true
+        if entry.item then
+          menuselected = true
+        elseif entry.action then
+          items.action_data[entry.action].action()
+        end
       elseif btns["P1 R"] == 1 then
         pagenum = pagenum + 1
         if pagenum > #pages then
@@ -186,19 +199,22 @@ function menu_drawer.frame()
     for i, v in ipairs(pages[pagenum]) do
       local skip = v.condition and not v.condition()
       if not skip then
+        if i == menuindex then
+          gui.drawPolygon(rightarrow, 15, y + 7, "white", "white")
+          if menuselected then
+            gui.drawPolygon(leftarrow, 147, y + 7, "white", "white")
+            gui.drawPolygon(rightarrow, 230, y + 7, "white", "white")
+          end
+        end
         if v.item then
           local item = items.item_data[v.item]
           gui.drawText(20, y, item.name, nil, nil, 12)
           gui.drawText(150, y, tostring(item.values[item.get() + 1]), nil, nil, 12)
-          if i == menuindex then
-            gui.drawPolygon(rightarrow, 15, y + 7, "white", "white")
-            if menuselected then
-              gui.drawPolygon(leftarrow, 147, y + 7, "white", "white")
-              gui.drawPolygon(rightarrow, 230, y + 7, "white", "white")
-            end
-          end
-          y = y + 12
+        elseif v.action then
+          local action = items.action_data[v.action]
+          gui.drawText(20, y, action.name, nil, nil, 12)
         end
+        y = y + 12
       end
     end
   end

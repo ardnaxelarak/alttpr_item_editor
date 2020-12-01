@@ -1,6 +1,8 @@
 local items = {}
 
 local addresses = {
+  bomb_max_base = 0x308034,
+  arrow_max_base = 0x308035,
   equipped = 0x7e0202,
   bow = 0x7ef340,
   boomerang = 0x7ef341,
@@ -33,10 +35,17 @@ local addresses = {
   bottle2 = 0x7ef35d,
   bottle3 = 0x7ef35e,
   bottle4 = 0x7ef35f,
+  rupee_max = 0x7ef360,
   rupees = 0x7ef362,
-  healthpiece = 0x7ef36b,
-  healthmax = 0x7ef36c,
-  healthcur = 0x7ef36d,
+  health_piece = 0x7ef36b,
+  health_max = 0x7ef36c,
+  health_cur = 0x7ef36d,
+  bomb_max_increase = 0x7ef370,
+  arrow_max_increase = 0x7ef371,
+  health_filler = 0x7ef372,
+  magic_filler = 0x7ef373,
+  bomb_filler = 0x7ef375,
+  arrow_filler = 0x7ef376,
   arrows = 0x7ef377,
   abilities = 0x7ef379,
   magic_usage = 0x7ef37b,
@@ -51,12 +60,44 @@ local bottle_addresses = {
   addresses.bottle4,
 }
 
+local function set_health(value)
+  return memory.writebyte(addresses.health_cur, value)
+end
+
+local function get_health()
+  return memory.readbyte(addresses.health_cur)
+end
+
+local function set_health_max(value)
+  return memory.writebyte(addresses.health_max, value)
+end
+
+local function get_health_max()
+  return memory.readbyte(addresses.health_max)
+end
+
+local function fill_health()
+  memory.writebyte(addresses.health_filler, get_health_max())
+end
+
+local function get_arrow_max()
+  return memory.readbyte(addresses.arrow_max_base) + memory.readbyte(addresses.arrow_max_increase)
+end
+
 local function set_arrows(value)
   return memory.writebyte(addresses.arrows, value)
 end
 
 local function get_arrows()
   return memory.readbyte(addresses.arrows)
+end
+
+local function fill_arrows()
+  memory.writebyte(addresses.arrow_filler, get_arrow_max())
+end
+
+local function get_bomb_max()
+  return memory.readbyte(addresses.bomb_max_base) + memory.readbyte(addresses.bomb_max_increase)
 end
 
 local function set_bombs(value)
@@ -67,12 +108,32 @@ local function get_bombs()
   return memory.readbyte(addresses.bombs)
 end
 
+local function fill_bombs()
+  memory.writebyte(addresses.bomb_filler, get_bomb_max())
+end
+
 local function set_rupees(value)
   memory.write_u16_le(addresses.rupees, value)
 end
 
 local function get_rupees()
   return memory.read_u16_le(addresses.rupees)
+end
+
+local function set_rupee_max(value)
+  memory.write_u16_le(addresses.rupee_max, value)
+end
+
+local function get_rupee_max()
+  return memory.read_u16_le(addresses.rupee_max)
+end
+
+local function fill_rupees()
+  set_rupee_max(999)
+end
+
+local function fill_magic()
+  memory.writebyte(addresses.magic_filler, 128)
 end
 
 local function set_typical(address, value, max)
@@ -642,6 +703,14 @@ items.item_data = {
   bottle2 = {name = "Bottle 2", get = get_bottle2, set = set_bottle2, values = {"Empty", "Red", "Green", "Blue", "Fairy", "Bee", "Golden Bee"}},
   bottle3 = {name = "Bottle 3", get = get_bottle3, set = set_bottle3, values = {"Empty", "Red", "Green", "Blue", "Fairy", "Bee", "Golden Bee"}},
   bottle4 = {name = "Bottle 4", get = get_bottle4, set = set_bottle4, values = {"Empty", "Red", "Green", "Blue", "Fairy", "Bee", "Golden Bee"}},
+}
+
+items.action_data = {
+  fill_rupees = {name = "999 Rupees", action = fill_rupees},
+  fill_arrows = {name = "Fill Arrows", action = fill_arrows},
+  fill_bombs = {name = "Fill Bombs", action = fill_bombs},
+  fill_magic = {name = "Fill Magic", action = fill_magic},
+  fill_health = {name = "Fill Health", action = fill_health},
 }
 
 items.addresses = addresses
