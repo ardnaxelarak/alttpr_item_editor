@@ -52,6 +52,7 @@ local addresses = {
   swap1 = 0x7ef38c,
   swap2 = 0x7ef38e,
   timer = 0x7ef43e,
+  ice_physics = 0x7f50c7,
 }
 
 local bottle_addresses = {
@@ -783,6 +784,24 @@ local function shieldfree_start(duration)
   start_effect("shieldfree", duration, shieldfree_frame, shieldfree_end, data)
 end
 
+local function ice_physics_end(data)
+  memory.writebyte(addresses.ice_physics, 0)
+end
+
+local function ice_physics_cancel()
+  if not timed_effects.ice_physics then
+    return
+  end
+  ice_physics_end(timed_effects.ice_physics.data)
+  timed_effects.ice_physics = nil
+end
+
+local function ice_physics_start(duration)
+  memory.writebyte(addresses.ice_physics, 1)
+  local data = {}
+  start_effect("ice_physics", duration, function() end, ice_physics_end, data)
+end
+
 items.item_data = {
   bow = {name = "Bow", get = get_bow, set = set_bow, values = {"none", "regular", "silver"}},
   boomerang = {name = "Boomerang", get = get_boomerang, set = set_boomerang, values = {"none", "blue", "red", "both"}},
@@ -848,6 +867,13 @@ items.effects_data = {
     is_active = function() return not not timed_effects.shieldfree end,
     start = function() shieldfree_start(5 * 60 * 60) end,
     cancel = shieldfree_cancel,
+  },
+  ice_physics = {
+    name = "Ice Physics (5 min)",
+    cancel_name = "Cancel Ice Physics",
+    is_active = function() return not not timed_effects.ice_physics end,
+    start = function() ice_physics_start(5 * 60 * 60) end,
+    cancel = ice_physics_cancel,
   },
 }
 

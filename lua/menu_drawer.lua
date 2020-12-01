@@ -69,6 +69,7 @@ local page5 = {
   {effect = "swordless"},
   {effect = "armorless"},
   {effect = "shieldfree"},
+  {effect = "ice_physics"},
 }
 
 local pages = {
