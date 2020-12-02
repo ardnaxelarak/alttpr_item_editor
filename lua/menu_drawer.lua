@@ -90,6 +90,19 @@ local menuselected = false
 local delay = 30
 local rep = 10
 
+local function frames_to_time(frames)
+  local seconds = math.floor(frames / 60)
+  local minutes = math.floor(seconds / 60)
+  local hours = math.floor(minutes / 60)
+  seconds = seconds % 60
+  minutes = minutes % 60
+  if hours > 0 then
+    return string.format("%d:%02d:%02d", hours, minutes, seconds)
+  else
+    return string.format("%d:%02d", minutes, seconds)
+  end
+end
+
 local function check_menu(btns)
   for i1, v1 in ipairs(config.trigger_menu) do
     local any = false
@@ -243,6 +256,15 @@ function menu_drawer.frame()
         end
       end
       y = y + 12
+    end
+  else
+    -- not menu, draw current effects on screen
+    local y = 207
+    for i, v in ipairs(items.get_effects()) do
+      local text = v.name .. " - " .. frames_to_time(v.remaining)
+      gui.drawRectangle(2, y, 7 * string.len(text) + 12, 14, 0xb0000000, 0xb0000000)
+      gui.drawText(3, y - 1, v.name .. " - " .. frames_to_time(v.remaining))
+      y = y - 15
     end
   end
 

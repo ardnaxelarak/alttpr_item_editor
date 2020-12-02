@@ -677,13 +677,16 @@ local function set_bottles(value)
   end
 end
 
-local function start_effect(name, duration, on_frame, on_end, data)
-  if timed_effects[name] then
+local function start_effect(key, name, duration, on_frame, on_end, data)
+  if timed_effects[key] then
     return
   end
-  local end_time = get_timer() + duration
-  timed_effects[name] = {
+  local start_time = get_timer()
+  local end_time = start_time + duration
+  timed_effects[key] = {
+    key = key,
     name = name,
+    start_time = start_time,
     end_time = end_time,
     on_frame = on_frame,
     on_end = on_end,
@@ -719,7 +722,7 @@ local function swordless_start(duration)
   local cur_sword = get_sword()
   set_sword(0)
   local data = {cur_sword = cur_sword}
-  start_effect("swordless", duration, swordless_frame, swordless_end, data)
+  start_effect("swordless", "Swordless", duration, swordless_frame, swordless_end, data)
 end
 
 local function armorless_frame(data)
@@ -750,7 +753,7 @@ local function armorless_start(duration)
   local cur_armor = get_armor()
   set_armor(0)
   local data = {cur_armor = cur_armor}
-  start_effect("armorless", duration, armorless_frame, armorless_end, data)
+  start_effect("armorless", "Armorless", duration, armorless_frame, armorless_end, data)
 end
 
 local function shieldfree_frame(data)
@@ -781,7 +784,7 @@ local function shieldfree_start(duration)
   local cur_shield = get_shield()
   set_shield(0)
   local data = {cur_shield = cur_shield}
-  start_effect("shieldfree", duration, shieldfree_frame, shieldfree_end, data)
+  start_effect("shieldfree", "Shield-Free", duration, shieldfree_frame, shieldfree_end, data)
 end
 
 local function ice_physics_end(data)
@@ -799,7 +802,7 @@ end
 local function ice_physics_start(duration)
   memory.writebyte(addresses.ice_physics, 1)
   local data = {}
-  start_effect("ice_physics", duration, function() end, ice_physics_end, data)
+  start_effect("ice_physics", "Ice Physics", duration, function() end, ice_physics_end, data)
 end
 
 items.item_data = {
@@ -891,6 +894,17 @@ function items.frame_check()
       v.on_frame(v.data)
     end
   end
+end
+
+function items.get_effects()
+  local time = get_timer()
+  local effects = {}
+  for k, v in pairs(timed_effects) do
+    if time > v.start_time and time < v.end_time then
+      table.insert(effects, {key = v.key, name = v.name, remaining = v.end_time - time})
+    end
+  end
+  return effects
 end
 
 return items;
