@@ -67,7 +67,7 @@ local timed_effects = {}
 
 local function in_game()
   local value = memory.readbyte(addresses.game_state)
-  return value ~= 0 and value ~= 1 and value ~= 20
+  return value ~= 0 and value ~= 1 and value ~= 3 and value ~= 20
 end
 
 local function get_timer()
