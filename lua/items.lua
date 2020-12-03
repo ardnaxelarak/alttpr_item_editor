@@ -465,6 +465,12 @@ local function get_flute()
   end
 end
 
+local function deactivate_flute()
+  if get_flute() == 2 then
+    set_flute(1)
+  end
+end
+
 local function set_net(value)
   set_typical(addresses.net, value)
 end
@@ -873,6 +879,7 @@ items.action_data = {
   fill_bombs = {name = "Fill Bombs", action = fill_bombs},
   fill_magic = {name = "Fill Magic", action = fill_magic},
   fill_health = {name = "Fill Health", action = fill_health},
+  deactivate_flute = {name = "Deactivate Flute", action = deactivate_flute},
 }
 
 items.effects_data = {
@@ -944,7 +951,10 @@ function items.get_effects()
 end
 
 function items.receive_data(data)
-  if data.effect then
+  if data.action then
+    local action = items.action_data[data.action]
+    action.action()
+  elseif data.effect then
     local effect = items.effects_data[data.effect]
     effect.start()
   end

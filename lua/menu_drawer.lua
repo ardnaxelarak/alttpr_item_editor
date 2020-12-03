@@ -66,6 +66,7 @@ local page5 = {
   {action = "fill_bombs"},
   {action = "fill_magic"},
   {action = "fill_health"},
+  {action = "deactivate_flute"},
   {effect = "swordless"},
   {effect = "armorless"},
   {effect = "shieldfree"},
