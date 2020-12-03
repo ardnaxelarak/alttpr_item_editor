@@ -65,6 +65,11 @@ local bottle_addresses = {
 
 local timed_effects = {}
 
+local function in_game()
+  local value = memory.readbyte(addresses.game_state)
+  return value ~= 0 and value ~= 1 and value ~= 20
+end
+
 local function get_timer()
   return memory.read_u32_le(addresses.timer)
 end
@@ -678,21 +683,33 @@ local function set_bottles(value)
   end
 end
 
-local function start_effect(key, name, duration, on_frame, on_end, data)
+local function start_effect(key, name, duration, on_frame, on_end, on_start)
   if timed_effects[key] then
     return
   end
   local start_time = get_timer()
   local end_time = start_time + duration
-  timed_effects[key] = {
-    key = key,
-    name = name,
-    start_time = start_time,
-    end_time = end_time,
-    on_frame = on_frame,
-    on_end = on_end,
-    data = data,
-  }
+  if in_game() then
+    timed_effects[key] = {
+      key = key,
+      name = name,
+      start_time = start_time,
+      end_time = end_time,
+      on_frame = on_frame,
+      on_end = on_end,
+      data = on_start(),
+    }
+  else
+    timed_effects[key] = {
+      key = key,
+      name = name,
+      pending = true,
+      duration = duration,
+      on_frame = on_frame,
+      on_end = on_end,
+      on_start = on_start,
+    }
+  end
 end
 
 local function swordless_frame(data)
@@ -720,10 +737,12 @@ local function swordless_cancel()
 end
 
 local function swordless_start(duration)
-  local cur_sword = get_sword()
-  set_sword(0)
-  local data = {cur_sword = cur_sword}
-  start_effect("swordless", "Swordless", duration, swordless_frame, swordless_end, data)
+  local on_start = function()
+    local cur_sword = get_sword()
+    set_sword(0)
+    return {cur_sword = cur_sword}
+  end
+  start_effect("swordless", "Swordless", duration, swordless_frame, swordless_end, on_start)
 end
 
 local function armorless_frame(data)
@@ -751,10 +770,12 @@ local function armorless_cancel()
 end
 
 local function armorless_start(duration)
-  local cur_armor = get_armor()
-  set_armor(0)
-  local data = {cur_armor = cur_armor}
-  start_effect("armorless", "Armorless", duration, armorless_frame, armorless_end, data)
+  local on_start = function()
+    local cur_armor = get_armor()
+    set_armor(0)
+    return {cur_armor = cur_armor}
+  end
+  start_effect("armorless", "Armorless", duration, armorless_frame, armorless_end, on_start)
 end
 
 local function shieldfree_frame(data)
@@ -782,10 +803,12 @@ local function shieldfree_cancel()
 end
 
 local function shieldfree_start(duration)
-  local cur_shield = get_shield()
-  set_shield(0)
-  local data = {cur_shield = cur_shield}
-  start_effect("shieldfree", "Shield-Free", duration, shieldfree_frame, shieldfree_end, data)
+  local on_start = function()
+    local cur_shield = get_shield()
+    set_shield(0)
+    return {cur_shield = cur_shield}
+  end
+  start_effect("shieldfree", "Shield-Free", duration, shieldfree_frame, shieldfree_end, on_start)
 end
 
 local function ice_physics_end(data)
@@ -801,9 +824,11 @@ local function ice_physics_cancel()
 end
 
 local function ice_physics_start(duration)
-  memory.writebyte(addresses.ice_physics, 1)
-  local data = {}
-  start_effect("ice_physics", "Ice Physics", duration, function() end, ice_physics_end, data)
+  local on_start = function()
+    memory.writebyte(addresses.ice_physics, 1)
+    return {}
+  end
+  start_effect("ice_physics", "Ice Physics", duration, function() end, ice_physics_end, on_start)
 end
 
 items.item_data = {
@@ -887,12 +912,20 @@ items.get_bottles = get_bottles
 
 function items.frame_check()
   local timer = get_timer()
-  for k, v in pairs(timed_effects) do
-    if timer > v.end_time then
-      v.on_end(v.data)
-      timed_effects[k] = nil
-    else
-      v.on_frame(v.data)
+  if in_game() then
+    for k, v in pairs(timed_effects) do
+      if v.pending then
+        v.pending = false
+        v.start_time = timer
+        v.end_time = timer + v.duration
+        v.data = v.on_start()
+        v.on_start = nil
+      elseif timer > v.end_time then
+        v.on_end(v.data)
+        timed_effects[k] = nil
+      else
+        v.on_frame(v.data)
+      end
     end
   end
 end
@@ -900,9 +933,11 @@ end
 function items.get_effects()
   local time = get_timer()
   local effects = {}
-  for k, v in pairs(timed_effects) do
-    if time > v.start_time and time < v.end_time then
-      table.insert(effects, {key = v.key, name = v.name, remaining = v.end_time - time})
+  if in_game() then
+    for k, v in pairs(timed_effects) do
+      if not v.pending and time > v.start_time and time < v.end_time then
+        table.insert(effects, {key = v.key, name = v.name, remaining = v.end_time - time})
+      end
     end
   end
   return effects
