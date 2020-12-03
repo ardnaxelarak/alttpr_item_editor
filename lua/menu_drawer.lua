@@ -59,6 +59,10 @@ local page4 = {
   {item = "bottle2", condition = function() return items.get_bottles() >= 2 end},
   {item = "bottle3", condition = function() return items.get_bottles() >= 3 end},
   {item = "bottle4", condition = function() return items.get_bottles() >= 4 end},
+  {item = "infinite_arrows"},
+  {item = "infinite_bombs"},
+  {item = "infinite_magic"},
+  {item = "ice_physics"},
 }
 local page5 = {
   {action = "fill_rupees"},

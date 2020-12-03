@@ -54,6 +54,9 @@ local addresses = {
   swap2 = 0x7ef38e,
   timer = 0x7ef43e,
   ice_physics = 0x7f50c7,
+  infinite_arrows = 0x7f50c8,
+  infinite_bombs = 0x7f50c9,
+  infinite_magic = 0x7f50ca,
 }
 
 local bottle_addresses = {
@@ -689,6 +692,38 @@ local function set_bottles(value)
   end
 end
 
+local function set_infinite_arrows(value)
+  set_typical(addresses.infinite_arrows, value)
+end
+
+local function get_infinite_arrows()
+  return get_typical(addresses.infinite_arrows)
+end
+
+local function set_infinite_bombs(value)
+  set_typical(addresses.infinite_bombs, value)
+end
+
+local function get_infinite_bombs()
+  return get_typical(addresses.infinite_bombs)
+end
+
+local function set_infinite_magic(value)
+  set_typical(addresses.infinite_magic, value)
+end
+
+local function get_infinite_magic()
+  return get_typical(addresses.infinite_magic)
+end
+
+local function set_ice_physics(value)
+  set_typical(addresses.ice_physics, value)
+end
+
+local function get_ice_physics()
+  return get_typical(addresses.ice_physics)
+end
+
 local function start_effect(key, name, duration, on_frame, on_end, on_start)
   if timed_effects[key] then
     return
@@ -818,7 +853,7 @@ local function shieldfree_start(duration)
 end
 
 local function ice_physics_end(data)
-  memory.writebyte(addresses.ice_physics, 0)
+  set_ice_physics(0)
 end
 
 local function ice_physics_cancel()
@@ -831,7 +866,7 @@ end
 
 local function ice_physics_start(duration)
   local on_start = function()
-    memory.writebyte(addresses.ice_physics, 1)
+    set_ice_physics(1)
     return {}
   end
   start_effect("ice_physics", "Ice Physics", duration, function() end, ice_physics_end, on_start)
@@ -871,6 +906,10 @@ items.item_data = {
   bottle2 = {name = "Bottle 2", get = get_bottle2, set = set_bottle2, values = {"Empty", "Red", "Green", "Blue", "Fairy", "Bee", "Golden Bee"}},
   bottle3 = {name = "Bottle 3", get = get_bottle3, set = set_bottle3, values = {"Empty", "Red", "Green", "Blue", "Fairy", "Bee", "Golden Bee"}},
   bottle4 = {name = "Bottle 4", get = get_bottle4, set = set_bottle4, values = {"Empty", "Red", "Green", "Blue", "Fairy", "Bee", "Golden Bee"}},
+  ice_physics = {name = "Ice Physics", get = get_ice_physics, set = set_ice_physics, values = {false, true}},
+  infinite_arrows = {name = "Infinite Arrows", get = get_infinite_arrows, set = set_infinite_arrows, values = {false, true}},
+  infinite_bombs = {name = "Infinite Bombs", get = get_infinite_bombs, set = set_infinite_bombs, values = {false, true}},
+  infinite_magic = {name = "Infinite Magic", get = get_infinite_magic, set = set_infinite_magic, values = {false, true}},
 }
 
 items.action_data = {
