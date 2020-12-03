@@ -3,6 +3,7 @@ local items = {}
 local addresses = {
   bomb_max_base = 0x308034,
   arrow_max_base = 0x308035,
+  game_state = 0x7e0010,
   equipped = 0x7e0202,
   bow = 0x7ef340,
   boomerang = 0x7ef341,
@@ -905,6 +906,13 @@ function items.get_effects()
     end
   end
   return effects
+end
+
+function items.receive_data(data)
+  if data.effect then
+    local effect = items.effects_data[data.effect]
+    effect.start()
+  end
 end
 
 return items;

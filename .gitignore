@@ -1,1 +1,4 @@
+.DS_Store
 *.swp
+py/creds.py
+lua/json.lua
