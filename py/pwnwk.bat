@@ -1,1 +1,2 @@
 python pynwk.py
+pause

@@ -10,7 +10,7 @@ import creds
 data = {
     "type": "LISTEN",
     "data": {
-        "topics": ["channel-points-channel-v1." + creds.channel_id],
+        "topics": ["channel-points-channel-v1." + str(creds.channel_id)],
         "auth_token": creds.auth_token,
     }
 }
