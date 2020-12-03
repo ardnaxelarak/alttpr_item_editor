@@ -1,7 +1,11 @@
 local config = require("config")
 
-local network = require("network")
-local json = require("json")
+local network
+local json
+if config.use_network then
+  network = require("network")
+  json = require("json")
+end
 local controller = require("controller")
 local items = require("items")
 local menu = require("menu_drawer")
