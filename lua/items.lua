@@ -717,11 +717,20 @@ local function get_infinite_magic()
 end
 
 local function set_ice_physics(value)
-  set_typical(addresses.ice_physics, value)
+  if value == 1 then
+    memory.writebyte(addresses.ice_physics, 0x11)
+  else
+    memory.writebyte(addresses.ice_physics, 0)
+  end
 end
 
 local function get_ice_physics()
-  return get_typical(addresses.ice_physics)
+  value = memory.readbyte(addresses.ice_physics)
+  if value == 0x11 then
+    return 1
+  else
+    return 0
+  end
 end
 
 local function start_effect(key, name, duration, on_frame, on_end, on_start)
