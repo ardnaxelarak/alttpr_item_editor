@@ -57,6 +57,7 @@ local addresses = {
   infinite_arrows = 0x7f50c8,
   infinite_bombs = 0x7f50c9,
   infinite_magic = 0x7f50ca,
+  ohko = 0x7f50cc,
 }
 
 local bottle_addresses = {
@@ -733,6 +734,23 @@ local function get_ice_physics()
   end
 end
 
+local function set_ohko(value)
+  if value == 1 then
+    memory.writebyte(addresses.ohko, 0x11)
+  else
+    memory.writebyte(addresses.ohko, 0)
+  end
+end
+
+local function get_ohko()
+  value = memory.readbyte(addresses.ohko)
+  if value == 0x11 then
+    return 1
+  else
+    return 0
+  end
+end
+
 local function start_effect(key, name, duration, on_frame, on_end, on_start)
   if timed_effects[key] then
     return
@@ -881,6 +899,26 @@ local function ice_physics_start(duration)
   start_effect("ice_physics", "Ice Physics", duration, function() end, ice_physics_end, on_start)
 end
 
+local function ohko_end(data)
+  set_ohko(0)
+end
+
+local function ohko_cancel()
+  if not timed_effects.ohko then
+    return
+  end
+  ohko_end(timed_effects.ohko.data)
+  timed_effects.ohko = nil
+end
+
+local function ohko_start(duration)
+  local on_start = function()
+    set_ohko(1)
+    return {}
+  end
+  start_effect("ohko", "One-Hit KO", duration, function() end, ohko_end, on_start)
+end
+
 items.item_data = {
   bow = {name = "Bow", get = get_bow, set = set_bow, values = {"none", "regular", "silver"}},
   boomerang = {name = "Boomerang", get = get_boomerang, set = set_boomerang, values = {"none", "blue", "red", "both"}},
@@ -958,6 +996,13 @@ items.effects_data = {
     is_active = function() return not not timed_effects.ice_physics end,
     start = function() ice_physics_start(5 * 60 * 60) end,
     cancel = ice_physics_cancel,
+  },
+  ohko = {
+    name = "OHKO (1 min)",
+    cancel_name = "Cancel OHKO",
+    is_active = function() return not not timed_effects.ohko end,
+    start = function() ohko_start(1 * 60 * 60) end,
+    cancel = ohko_cancel,
   },
 }
 
