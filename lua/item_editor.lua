@@ -3,7 +3,7 @@ local config = require("config")
 local network
 local json
 if config.use_network then
-  network = require("network")
+  network = require("network_client")
   json = require("json")
 end
 local controller = require("controller")
@@ -30,15 +30,11 @@ function gameloop()
 end
 
 function on_data(data)
-  local json_data = json.decode(data)
-  if twitch and json_data.type == "reward" then
-    for i, v in ipairs(twitch.redeems) do
-      if v.key.title and v.key.title == json_data.data.redeem_title then
-        items.receive_data(v.value)
-      end
-    end
-  end
   console.log(data)
+  local json_data = json.decode(data)
+  if json_data.type == "redemption" then
+    items.receive_data(json_data.value)
+  end
 end
 
 function on_exit()
@@ -50,7 +46,7 @@ end
 controller.refresh_bindings()
 
 if config.use_network then
-  network.register(on_data)
+  network.register(on_data, config.twitch_username)
 end
 
 event.onexit(on_exit)

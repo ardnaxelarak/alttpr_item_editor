@@ -2,6 +2,7 @@ local config = {}
 
 config.use_network = false
 config.track_items = false
+config.twitch_username = "karafruit"
 
 config.trigger_menu = {
   {
