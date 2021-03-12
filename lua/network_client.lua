@@ -15,7 +15,7 @@ function network.register(callbk, username)
       console.log(err)
     end
   end
-  tcp:settimeout(0.01)
+  tcp:settimeout(0.001)
   callback = callbk
 end
 
