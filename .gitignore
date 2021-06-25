@@ -1,6 +1,3 @@
 .DS_Store
 *.swp
 *~
-py/creds.py
-py/__pycache__
-lua/json.lua
