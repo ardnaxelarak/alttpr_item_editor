@@ -908,7 +908,7 @@ function Items:get_data()
         name = "Sword",
         get = function() return self:get_sword() end,
         set = function(value) self:set_sword(value) end,
-        condition = function() return not self:get_swordless() end,
+        condition = function() return not self:get_swordless() and not self:get_special_bombs() end,
         values = {"none", "fighter", "master", "tempered", "golden"}},
     shield = {
         name = "Shield",
