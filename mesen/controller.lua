@@ -1,8 +1,8 @@
 local controller = {}
 
 function controller.get_inputs()
-  local mem1 = emu.read(0xF8, emu.memType.workRam)
-  local mem2 = emu.read(0xFA, emu.memType.workRam)
+  local mem1 = emu.read(0xF0, emu.memType.workRam)
+  local mem2 = emu.read(0xF2, emu.memType.workRam)
   return {
     a = mem2 & 0x80 > 0,
     x = mem2 & 0x40 > 0,

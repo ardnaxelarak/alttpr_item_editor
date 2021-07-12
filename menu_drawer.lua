@@ -27,6 +27,7 @@ function Menu:new(gfx, items, input, mem)
     start = 0,
     select = 0,
   }
+  self.sincelastmenu = 100
   return o
 end
 
@@ -146,7 +147,9 @@ end
 
 function Menu:frame()
   self:update_buttons()
-  if self:check_menu() then
+  self.sincelastmenu = self.sincelastmenu + 1
+  if self:check_menu() and self.sincelastmenu > 5 then
+    self.sincelastmenu = 0
     if self.menu then
       self.menu = false
     else

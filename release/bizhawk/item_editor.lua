@@ -757,11 +757,11 @@ function Items:get_swordless()
 end
 
 function Items:set_bomb_upgrades(value)
-  self:set_typical(addresses.bomb_upgrades, value, 4)
+  self:set_typical(addresses.bomb_upgrades, value, 5)
 end
 
 function Items:get_bomb_upgrades()
-  return self:get_typical(addresses.bomb_upgrades, 4)
+  return self:get_typical(addresses.bomb_upgrades, 5)
 end
 
 function Items:get_special_bombs()
@@ -1078,7 +1078,7 @@ function Items:get_data()
         get = function() return self:get_bomb_upgrades() end,
         set = function(value) self:set_bomb_upgrades(value) end,
         condition = function() return self:get_special_bombs() end,
-        values = {"L1", "L2", "L3", "L4", "L5"}},
+        values = {"none", "L1", "L2", "L3", "L4", "L5"}},
     heart_containers = {
         name = "Heart Containers",
         get = function() return self:get_heart_containers() end,
@@ -1195,6 +1195,7 @@ function Menu:new(gfx, items, input, mem)
     start = 0,
     select = 0,
   }
+  self.sincelastmenu = 100
   return o
 end
 
@@ -1314,7 +1315,9 @@ end
 
 function Menu:frame()
   self:update_buttons()
-  if self:check_menu() then
+  self.sincelastmenu = self.sincelastmenu + 1
+  if self:check_menu() and self.sincelastmenu > 5 then
+    self.sincelastmenu = 0
     if self.menu then
       self.menu = false
     else
