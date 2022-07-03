@@ -29,4 +29,8 @@ function graphics.draw_right_arrow(x, y, color)
   emu.drawLine(x, y + 3, x, y - 3, convert_color(color))
 end
 
+function graphics.clear()
+  emu.clearScreen()
+end
+
 return graphics

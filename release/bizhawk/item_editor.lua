@@ -46,6 +46,10 @@ function gfx.draw_right_arrow(x, y, color)
   gui.drawLine(x, y + 3, x, y - 3, color)
 end
 
+function gfx.clear()
+  gui.clearGraphics()
+end
+
 return gfx
 
 end,
@@ -155,6 +159,10 @@ local addresses = {
   starting_sword = 0x180043,
   game_state = 0x0010,
   equipped = 0x0202,
+  skull_woods = 0xf2c0,
+  pyramid = 0xf2db,
+  misery_mire = 0xf2f0,
+  turtle_rock = 0xf2c7,
   bow = 0xf340,
   boomerang = 0xf341,
   hookshot = 0xf342,
@@ -203,6 +211,7 @@ local addresses = {
   swap1 = 0xf38c,
   swap2 = 0xf38e,
   bomb_upgrades = 0xf38f,
+  chapter = 0xf3c5,
   timer = 0xf43e,
   cucco_storm = 0x150c5,
   ice_physics = 0x150c7,
@@ -339,6 +348,27 @@ function Items:get_typical(address, max, default)
     return default
   else
     return value
+  end
+end
+
+function Items:set_bitwise(address, bitmask, value)
+  local byte = self.mem.read_wram(address)
+
+  if value >= 1 then
+    byte = self.bit.bor(byte, bitmask)
+  else
+    byte = self.bit.band(byte, self.bit.bnot(bitmask))
+  end
+
+  self.mem.write_wram(address, byte)
+end
+
+function Items:get_bitwise(address, bitmask)
+  local byte = self.mem.read_wram(address)
+  if self.bit.band(byte, bitmask) > 0 then
+    return 1
+  else
+    return 0
   end
 end
 
@@ -1153,6 +1183,36 @@ function Items:get_data()
     fill_health = {
         name = "Fill Health",
         action = function() self:fill_health() end},
+    chapter = {
+        name = "Game State",
+        get = function() return self:get_typical(addresses.chapter, 3) end,
+        set = function(value) self:set_typical(addresses.chapter, value, 3) end,
+        values = {"Start", "Uncle", "Zelda", "Agahnim"}},
+    pyramid_hole = {
+        name = "Pyramid Hole",
+        get = function() return self:get_bitwise(addresses.pyramid, 0x20) end,
+        set = function(value) self:set_bitwise(addresses.pyramid, 0x20, value) end,
+        values = {"Closed", "Open"}},
+    pyramid_fairy = {
+        name = "Pyramid Fairy",
+        get = function() return self:get_bitwise(addresses.pyramid, 0x02) end,
+        set = function(value) self:set_bitwise(addresses.pyramid, 0x02, value) end,
+        values = {"Closed", "Open"}},
+    skull_woods = {
+        name = "Skull Woods Back",
+        get = function() return self:get_bitwise(addresses.skull_woods, 0x20) end,
+        set = function(value) self:set_bitwise(addresses.skull_woods, 0x20, value) end,
+        values = {"Closed", "Open"}},
+    misery_mire = {
+        name = "Misery Mire Entrance",
+        get = function() return self:get_bitwise(addresses.misery_mire, 0x20) end,
+        set = function(value) self:set_bitwise(addresses.misery_mire, 0x20, value) end,
+        values = {"Closed", "Open"}},
+    turtle_rock = {
+        name = "Turtle Rock Entrance",
+        get = function() return self:get_bitwise(addresses.turtle_rock, 0x20) end,
+        set = function(value) self:set_bitwise(addresses.turtle_rock, 0x20, value) end,
+        values = {"Closed", "Open"}},
   }
 end
 
@@ -1254,6 +1314,14 @@ local page5 = {
   {type = "item", value = "ice_physics"},
   {type = "item", value = "cucco_storm"},
 }
+local page6 = {
+  {type = "item", value = "chapter"},
+  {type = "item", value = "skull_woods"},
+  {type = "item", value = "misery_mire"},
+  {type = "item", value = "turtle_rock"},
+  {type = "item", value = "pyramid_fairy"},
+  {type = "item", value = "pyramid_hole"},
+}
 
 local pages = {
   page1,
@@ -1261,6 +1329,7 @@ local pages = {
   page3,
   page4,
   page5,
+  page6,
 }
 
 local function check_menu(btns)
@@ -1320,10 +1389,15 @@ function Menu:frame()
     self.sincelastmenu = 0
     if self.menu then
       self.menu = false
+      self.gfx.clear()
     else
       local state = self.mem.read_wram_word(0x0010)
       if state ~= 0x0007 and state ~= 0x0009 and state ~= 0x000a and state ~= 0x010E then
         return
+      end
+      local module = self.mem.read_wram(0x0010)
+      if module ~= 0x0E then
+        self.mem.write_wram(0x010C, module)
       end
       self.mem.write_wram_word(0x0010, 0x010E)
       self.menu = true

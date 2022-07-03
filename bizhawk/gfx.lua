@@ -27,4 +27,8 @@ function gfx.draw_right_arrow(x, y, color)
   gui.drawLine(x, y + 3, x, y - 3, color)
 end
 
+function gfx.clear()
+  gui.clearGraphics()
+end
+
 return gfx

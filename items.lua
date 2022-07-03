@@ -7,6 +7,10 @@ local addresses = {
   starting_sword = 0x180043,
   game_state = 0x0010,
   equipped = 0x0202,
+  skull_woods = 0xf2c0,
+  pyramid = 0xf2db,
+  misery_mire = 0xf2f0,
+  turtle_rock = 0xf2c7,
   bow = 0xf340,
   boomerang = 0xf341,
   hookshot = 0xf342,
@@ -55,6 +59,7 @@ local addresses = {
   swap1 = 0xf38c,
   swap2 = 0xf38e,
   bomb_upgrades = 0xf38f,
+  chapter = 0xf3c5,
   timer = 0xf43e,
   cucco_storm = 0x150c5,
   ice_physics = 0x150c7,
@@ -191,6 +196,27 @@ function Items:get_typical(address, max, default)
     return default
   else
     return value
+  end
+end
+
+function Items:set_bitwise(address, bitmask, value)
+  local byte = self.mem.read_wram(address)
+
+  if value >= 1 then
+    byte = self.bit.bor(byte, bitmask)
+  else
+    byte = self.bit.band(byte, self.bit.bnot(bitmask))
+  end
+
+  self.mem.write_wram(address, byte)
+end
+
+function Items:get_bitwise(address, bitmask)
+  local byte = self.mem.read_wram(address)
+  if self.bit.band(byte, bitmask) > 0 then
+    return 1
+  else
+    return 0
   end
 end
 
@@ -1005,6 +1031,36 @@ function Items:get_data()
     fill_health = {
         name = "Fill Health",
         action = function() self:fill_health() end},
+    chapter = {
+        name = "Game State",
+        get = function() return self:get_typical(addresses.chapter, 3) end,
+        set = function(value) self:set_typical(addresses.chapter, value, 3) end,
+        values = {"Start", "Uncle", "Zelda", "Agahnim"}},
+    pyramid_hole = {
+        name = "Pyramid Hole",
+        get = function() return self:get_bitwise(addresses.pyramid, 0x20) end,
+        set = function(value) self:set_bitwise(addresses.pyramid, 0x20, value) end,
+        values = {"Closed", "Open"}},
+    pyramid_fairy = {
+        name = "Pyramid Fairy",
+        get = function() return self:get_bitwise(addresses.pyramid, 0x02) end,
+        set = function(value) self:set_bitwise(addresses.pyramid, 0x02, value) end,
+        values = {"Closed", "Open"}},
+    skull_woods = {
+        name = "Skull Woods Back",
+        get = function() return self:get_bitwise(addresses.skull_woods, 0x20) end,
+        set = function(value) self:set_bitwise(addresses.skull_woods, 0x20, value) end,
+        values = {"Closed", "Open"}},
+    misery_mire = {
+        name = "Misery Mire Entrance",
+        get = function() return self:get_bitwise(addresses.misery_mire, 0x20) end,
+        set = function(value) self:set_bitwise(addresses.misery_mire, 0x20, value) end,
+        values = {"Closed", "Open"}},
+    turtle_rock = {
+        name = "Turtle Rock Entrance",
+        get = function() return self:get_bitwise(addresses.turtle_rock, 0x20) end,
+        set = function(value) self:set_bitwise(addresses.turtle_rock, 0x20, value) end,
+        values = {"Closed", "Open"}},
   }
 end
 

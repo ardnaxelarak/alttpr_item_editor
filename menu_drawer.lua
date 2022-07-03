@@ -86,6 +86,14 @@ local page5 = {
   {type = "item", value = "ice_physics"},
   {type = "item", value = "cucco_storm"},
 }
+local page6 = {
+  {type = "item", value = "chapter"},
+  {type = "item", value = "skull_woods"},
+  {type = "item", value = "misery_mire"},
+  {type = "item", value = "turtle_rock"},
+  {type = "item", value = "pyramid_fairy"},
+  {type = "item", value = "pyramid_hole"},
+}
 
 local pages = {
   page1,
@@ -93,6 +101,7 @@ local pages = {
   page3,
   page4,
   page5,
+  page6,
 }
 
 local function check_menu(btns)
@@ -152,10 +161,15 @@ function Menu:frame()
     self.sincelastmenu = 0
     if self.menu then
       self.menu = false
+      self.gfx.clear()
     else
       local state = self.mem.read_wram_word(0x0010)
       if state ~= 0x0007 and state ~= 0x0009 and state ~= 0x000a and state ~= 0x010E then
         return
+      end
+      local module = self.mem.read_wram(0x0010)
+      if module ~= 0x0E then
+        self.mem.write_wram(0x010C, module)
       end
       self.mem.write_wram_word(0x0010, 0x010E)
       self.menu = true
