@@ -105,7 +105,6 @@ function memory.read_rom(address)
 end
 
 function memory.write_wram(address, value)
-  emu.log(string.format("%04x: %02x", address, value))
   return emu.write(address, value, emu.memType.workRam)
 end
 
@@ -133,8 +132,8 @@ function controller.get_inputs()
     r = mem2 & 0x10 > 0,
     b = mem1 & 0x80 > 0,
     y = mem1 & 0x40 > 0,
-    start = mem1 & 0x20 > 0,
-    select = mem1 & 0x10 > 0,
+    start = mem1 & 0x10 > 0,
+    select = mem1 & 0x20 > 0,
     up = mem1 & 0x08 > 0,
     down = mem1 & 0x04 > 0,
     left = mem1 & 0x02 > 0,
@@ -158,11 +157,13 @@ local addresses = {
   special_bombs = 0x18002f,
   starting_sword = 0x180043,
   game_state = 0x0010,
+  indoor_bit = 0x001B,
   equipped = 0x0202,
-  skull_woods = 0xf2c0,
+  current_dungeon = 0x040c,
+  skull_woods_entrance = 0xf2c0,
   pyramid = 0xf2db,
-  misery_mire = 0xf2f0,
-  turtle_rock = 0xf2c7,
+  misery_mire_entrance = 0xf2f0,
+  turtle_rock_entrance = 0xf2c7,
   bow = 0xf340,
   boomerang = 0xf341,
   hookshot = 0xf342,
@@ -196,9 +197,13 @@ local addresses = {
   bottle4 = 0xf35f,
   rupee_max = 0xf360,
   rupees = 0xf362,
+  compass = 0xf364,
+  big_key = 0xf366,
+  map = 0xf368,
   health_piece = 0xf36b,
   health_max = 0xf36c,
   health_cur = 0xf36d,
+  small_keys = 0xf36f,
   bomb_max_increase = 0xf370,
   arrow_max_increase = 0xf371,
   health_filler = 0xf372,
@@ -235,6 +240,10 @@ function Items:new(mem, bit)
   self.mem = mem
   self.bit = bit
   return o
+end
+
+function Items:is_indoors()
+  return self.mem.read_wram(addresses.indoor_bit) == 1
 end
 
 function Items:set_health(value)
@@ -366,6 +375,43 @@ end
 function Items:get_bitwise(address, bitmask)
   local byte = self.mem.read_wram(address)
   if self.bit.band(byte, bitmask) > 0 then
+    return 1
+  else
+    return 0
+  end
+end
+
+function Items:set_dungeon_item(address, value)
+  local dungeon = self:get_dungeon()
+  if dungeon < 2 then
+    return 0
+  end
+
+  local bit = 16 - dungeon
+  local bitmask = self.bit.lshift(1, bit)
+
+  local word = self.mem.read_wram_word(address)
+
+  if value >= 1 then
+    word = self.bit.bor(word, bitmask)
+  else
+    word = self.bit.band(word, self.bit.bnot(bitmask))
+  end
+
+  self.mem.write_wram_word(address, word)
+end
+
+function Items:get_dungeon_item(address)
+  local dungeon = self:get_dungeon()
+  if dungeon < 2 then
+    return
+  end
+
+  local bit = 16 - dungeon
+  local bitmask = self.bit.lshift(1, bit)
+
+  local word = self.mem.read_wram_word(address)
+  if self.bit.band(word, bitmask) > 0 then
     return 1
   else
     return 0
@@ -960,6 +1006,30 @@ function Items:get_ohko()
   return self:get_typical(addresses.ohko, 1, 1)
 end
 
+function sequence(from, to)
+  ret = {}
+  for i = from, to do
+    table.insert(ret, i)
+  end
+  return ret
+end
+
+function Items:get_dungeon()
+  if not self:is_indoors() then
+    return 0
+  end
+  value = self.mem.read_wram(addresses.current_dungeon)
+  if value == 0xFF then
+    return 1
+  elseif value == 0x00 then
+    return 2
+  elseif value <= 0x1A then
+    return self.bit.rshift(value, 1) + 1
+  else
+    return 1 -- idk, assume we're in cave state probably
+  end
+end
+
 function Items:get_data()
   return {
     bow = {
@@ -1193,26 +1263,55 @@ function Items:get_data()
         get = function() return self:get_bitwise(addresses.pyramid, 0x20) end,
         set = function(value) self:set_bitwise(addresses.pyramid, 0x20, value) end,
         values = {"Closed", "Open"}},
-    pyramid_fairy = {
+    pyramid_fairy_entrance = {
         name = "Pyramid Fairy",
         get = function() return self:get_bitwise(addresses.pyramid, 0x02) end,
         set = function(value) self:set_bitwise(addresses.pyramid, 0x02, value) end,
         values = {"Closed", "Open"}},
-    skull_woods = {
+    skull_woods_entrance = {
         name = "Skull Woods Back",
-        get = function() return self:get_bitwise(addresses.skull_woods, 0x20) end,
-        set = function(value) self:set_bitwise(addresses.skull_woods, 0x20, value) end,
+        get = function() return self:get_bitwise(addresses.skull_woods_entrance, 0x20) end,
+        set = function(value) self:set_bitwise(addresses.skull_woods_entrance, 0x20, value) end,
         values = {"Closed", "Open"}},
-    misery_mire = {
-        name = "Misery Mire Entrance",
-        get = function() return self:get_bitwise(addresses.misery_mire, 0x20) end,
-        set = function(value) self:set_bitwise(addresses.misery_mire, 0x20, value) end,
+    misery_mire_entrance = {
+        name = "Misery Mire",
+        get = function() return self:get_bitwise(addresses.misery_mire_entrance, 0x20) end,
+        set = function(value) self:set_bitwise(addresses.misery_mire_entrance, 0x20, value) end,
         values = {"Closed", "Open"}},
-    turtle_rock = {
-        name = "Turtle Rock Entrance",
-        get = function() return self:get_bitwise(addresses.turtle_rock, 0x20) end,
-        set = function(value) self:set_bitwise(addresses.turtle_rock, 0x20, value) end,
+    turtle_rock_entrance = {
+        name = "Turtle Rock",
+        get = function() return self:get_bitwise(addresses.turtle_rock_entrance, 0x20) end,
+        set = function(value) self:set_bitwise(addresses.turtle_rock_entrance, 0x20, value) end,
         values = {"Closed", "Open"}},
+    current_dungeon = {
+        name = "Current Dungeon",
+        get = function() return self:get_dungeon() end,
+        can_set = function() return false end,
+        values = {"Outdoors", "Cave", "H Castle", "Eastern", "Desert", "C Tower", "Swamp", "PoD", "Misery", "Skull", "Ice", "Hera", "Thieves", "Turtle", "G Tower"}},
+    current_keys = {
+        name = "Current Keys",
+        get = function() return self:get_typical(addresses.small_keys, 255) end,
+        set = function(value) self:set_typical(addresses.small_keys, value, 255) end,
+        condition = function() return self:is_indoors() end,
+        values = sequence(0, 255)},
+    current_big_key = {
+        name = "Big Key",
+        get = function() return self:get_dungeon_item(addresses.big_key) end,
+        set = function(value) self:set_dungeon_item(addresses.big_key, value) end,
+        condition = function() return self:get_dungeon() >= 2 end,
+        values = {false, true}},
+    current_compass = {
+        name = "Compass",
+        get = function() return self:get_dungeon_item(addresses.compass) end,
+        set = function(value) self:set_dungeon_item(addresses.compass, value) end,
+        condition = function() return self:get_dungeon() >= 2 end,
+        values = {false, true}},
+    current_map = {
+        name = "Map",
+        get = function() return self:get_dungeon_item(addresses.map) end,
+        set = function(value) self:set_dungeon_item(addresses.map, value) end,
+        condition = function() return self:get_dungeon() >= 2 end,
+        values = {false, true}},
   }
 end
 
@@ -1316,11 +1415,19 @@ local page5 = {
 }
 local page6 = {
   {type = "item", value = "chapter"},
-  {type = "item", value = "skull_woods"},
-  {type = "item", value = "misery_mire"},
-  {type = "item", value = "turtle_rock"},
-  {type = "item", value = "pyramid_fairy"},
+  {type = "item", value = "skull_woods_entrance"},
+  {type = "item", value = "misery_mire_entrance"},
+  {type = "item", value = "turtle_rock_entrance"},
+  {type = "item", value = "pyramid_fairy_entrance"},
   {type = "item", value = "pyramid_hole"},
+}
+
+local dungeonPage = {
+  {type = "item", value = "current_dungeon"},
+  {type = "item", value = "current_keys"},
+  {type = "item", value = "current_map"},
+  {type = "item", value = "current_compass"},
+  {type = "item", value = "current_big_key"},
 }
 
 local pages = {
@@ -1330,6 +1437,7 @@ local pages = {
   page4,
   page5,
   page6,
+  dungeonPage,
 }
 
 local function check_menu(btns)
@@ -1439,7 +1547,7 @@ function Menu:frame()
       if self.btns.a == 1 then
         local data = self.data[entry.value]
         if not data.condition or data.condition() then
-          if entry.type == "item" then
+          if entry.type == "item" and (data.can_set == nil or data.can_set()) then
             self.menuselected = true
           elseif entry.type == "action" then
             data.action()
@@ -1481,6 +1589,7 @@ function Menu:frame()
     for i, v in ipairs(pages[self.pagenum]) do
       local data = self.data[v.value]
       local skip = data.condition and not data.condition()
+      local noset = data.can_set and not data.can_set()
       local color = 0xFFFFFFFF
       if skip then
         color = 0xFF999999
@@ -1496,6 +1605,9 @@ function Menu:frame()
         local item = self.data[v.value]
         self.gfx.draw_string(43, y, item.name, color)
         if not skip then
+          if noset then
+            color = 0xFF999999
+          end
           self.gfx.draw_string(150, y, tostring(item.values[item.get() + 1]):upper(), color)
         end
       elseif v.type == "action" then

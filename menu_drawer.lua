@@ -88,11 +88,19 @@ local page5 = {
 }
 local page6 = {
   {type = "item", value = "chapter"},
-  {type = "item", value = "skull_woods"},
-  {type = "item", value = "misery_mire"},
-  {type = "item", value = "turtle_rock"},
-  {type = "item", value = "pyramid_fairy"},
+  {type = "item", value = "skull_woods_entrance"},
+  {type = "item", value = "misery_mire_entrance"},
+  {type = "item", value = "turtle_rock_entrance"},
+  {type = "item", value = "pyramid_fairy_entrance"},
   {type = "item", value = "pyramid_hole"},
+}
+
+local dungeonPage = {
+  {type = "item", value = "current_dungeon"},
+  {type = "item", value = "current_keys"},
+  {type = "item", value = "current_map"},
+  {type = "item", value = "current_compass"},
+  {type = "item", value = "current_big_key"},
 }
 
 local pages = {
@@ -102,6 +110,7 @@ local pages = {
   page4,
   page5,
   page6,
+  dungeonPage,
 }
 
 local function check_menu(btns)
@@ -211,7 +220,7 @@ function Menu:frame()
       if self.btns.a == 1 then
         local data = self.data[entry.value]
         if not data.condition or data.condition() then
-          if entry.type == "item" then
+          if entry.type == "item" and (data.can_set == nil or data.can_set()) then
             self.menuselected = true
           elseif entry.type == "action" then
             data.action()
@@ -253,6 +262,7 @@ function Menu:frame()
     for i, v in ipairs(pages[self.pagenum]) do
       local data = self.data[v.value]
       local skip = data.condition and not data.condition()
+      local noset = data.can_set and not data.can_set()
       local color = 0xFFFFFFFF
       if skip then
         color = 0xFF999999
@@ -268,6 +278,9 @@ function Menu:frame()
         local item = self.data[v.value]
         self.gfx.draw_string(43, y, item.name, color)
         if not skip then
+          if noset then
+            color = 0xFF999999
+          end
           self.gfx.draw_string(150, y, tostring(item.values[item.get() + 1]):upper(), color)
         end
       elseif v.type == "action" then

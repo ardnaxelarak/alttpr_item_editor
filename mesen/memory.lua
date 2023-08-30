@@ -13,7 +13,6 @@ function memory.read_rom(address)
 end
 
 function memory.write_wram(address, value)
-  emu.log(string.format("%04x: %02x", address, value))
   return emu.write(address, value, emu.memType.workRam)
 end
 
