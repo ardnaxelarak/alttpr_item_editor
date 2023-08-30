@@ -64,7 +64,7 @@ local page3 = {
   {type = "item", value = "shield"},
   {type = "item", value = "armor"},
   {type = "item", value = "magic_usage"},
-  {type = "item", value = "bomb_upgrades"},
+  {type = "item", value = "weapon_upgrades"},
 }
 local page4 = {
   {type = "item", value = "heart_containers"},

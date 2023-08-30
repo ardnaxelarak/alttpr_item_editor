@@ -3,7 +3,7 @@ local Items = {}
 local addresses = {
   bomb_max_base = 0x180034,
   arrow_max_base = 0x180035,
-  special_bombs = 0x18002f,
+  special_weapons = 0x18002f,
   starting_sword = 0x180043,
   game_state = 0x0010,
   indoor_bit = 0x001B,
@@ -64,7 +64,7 @@ local addresses = {
   magic_usage = 0xf37b,
   swap1 = 0xf38c,
   swap2 = 0xf38e,
-  bomb_upgrades = 0xf38f,
+  weapon_upgrades = 0xf38f,
   chapter = 0xf3c5,
   timer = 0xf43e,
   cucco_storm = 0x150c5,
@@ -681,16 +681,17 @@ function Items:get_swordless()
   return self.mem.read_rom(addresses.starting_sword) == 0xFF
 end
 
-function Items:set_bomb_upgrades(value)
-  self:set_typical(addresses.bomb_upgrades, value, 5)
+function Items:set_weapon_upgrades(value)
+  self:set_typical(addresses.weapon_upgrades, value, 5)
 end
 
-function Items:get_bomb_upgrades()
-  return self:get_typical(addresses.bomb_upgrades, 5)
+function Items:get_weapon_upgrades()
+  return self:get_typical(addresses.weapon_upgrades, 5)
 end
 
-function Items:get_special_bombs()
-  return self.bit.band(self.mem.read_rom(addresses.special_bombs), 1) > 0
+function Items:get_special_weapons()
+  spw = self.mem.read_rom(addresses.special_weapons)
+  return spw == 1 or spw == 3 or spw == 4 or spw == 5 or spw == 8
 end
 
 function Items:set_shield(value)
@@ -1005,7 +1006,7 @@ function Items:get_data()
         name = "Sword",
         get = function() return self:get_sword() end,
         set = function(value) self:set_sword(value) end,
-        condition = function() return not self:get_swordless() and not self:get_special_bombs() end,
+        condition = function() return not self:get_swordless() and not self:get_special_weapons() end,
         values = {"none", "fighter", "master", "tempered", "golden"}},
     shield = {
         name = "Shield",
@@ -1022,11 +1023,11 @@ function Items:get_data()
         get = function() return self:get_magic_usage() end,
         set = function(value) self:set_magic_usage(value) end,
         values = {"standard", "1/2", "1/4"}},
-    bomb_upgrades = {
-        name = "Bomb Upgrades",
-        get = function() return self:get_bomb_upgrades() end,
-        set = function(value) self:set_bomb_upgrades(value) end,
-        condition = function() return self:get_special_bombs() end,
+    weapon_upgrades = {
+        name = "Weapon Upgrades",
+        get = function() return self:get_weapon_upgrades() end,
+        set = function(value) self:set_weapon_upgrades(value) end,
+        condition = function() return self:get_special_weapons() end,
         values = {"none", "L1", "L2", "L3", "L4", "L5"}},
     heart_containers = {
         name = "Heart Containers",
